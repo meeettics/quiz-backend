@@ -20,8 +20,8 @@ La risposta corretta era "${rispostaCorretta}".
 Spiega in modo chiaro, empatico e in massimo 3 frasi PERCHÉ la sua risposta è sbagliata e qual è il principio neuroscientifico corretto.`;
 
   try {
-    // Usiamo v1beta con gemini-2.5-flash
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    // 1. Prova prima con gemini-2.5-flash
+    let url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
     
     let geminiRes = await fetch(url, {
       method: 'POST',
@@ -33,9 +33,11 @@ Spiega in modo chiaro, empatico e in massimo 3 frasi PERCHÉ la sua risposta è 
 
     let data = await geminiRes.json();
 
-    // Fallback se il modello 2.5 non è ancora attivo sulla tua chiave
-    if (!geminiRes.ok && data.error?.code === 404) {
-      const fallbackUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // 2. Se fallisce, tenta il fallback su gemini-1.5-flash-latest
+    if (!geminiRes.ok) {
+      console.warn("Chiamata v1beta fallita, tentativo di fallback su gemini-1.5-flash-latest...");
+      const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+      
       geminiRes = await fetch(fallbackUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -47,7 +49,7 @@ Spiega in modo chiaro, empatico e in massimo 3 frasi PERCHÉ la sua risposta è 
     }
 
     if (!geminiRes.ok) {
-      console.error("Errore da Google API:", data);
+      console.error("Errore finale da Google API:", data);
       return res.status(500).json({ error: data.error?.message || "Errore durante la chiamata a Gemini." });
     }
 
