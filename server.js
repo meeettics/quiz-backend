@@ -14,18 +14,23 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 app.post('/api/spiega-errore', async (req, res) => {
   const { domanda, rispostaSbagliata, rispostaCorretta } = req.body;
 
-  const prompt = `Sei un professore universitario di Psicobiologia (programma Facoetti e Sartori). 
+  const prompt = `Sei un professore universitario di Psicobiologia. 
 Uno studente ha risposto "${rispostaSbagliata}" alla domanda "${domanda}". 
 La risposta corretta era "${rispostaCorretta}". 
-Spiega in modo chiaro, empatico e in massimo 3 frasi PERCHÉ la sua risposta è un errore e qual è il principio neuroscientifico corretto.`;
+Spiega in modo chiaro, empatico e in massimo 3 frasi PERCHÉ la sua risposta è sbagliata e qual è il principio neuroscientifico corretto.`;
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
     });
-    res.json({ spiegazione: response.text });
+
+    // Estrazione corretta del testo per l'SDK @google/genai
+    const textOutput = response.text || response.candidates?.[0]?.content?.parts?.[0]?.text || "Spiegazione non disponibile al momento.";
+
+    res.json({ spiegazione: textOutput });
   } catch (err) {
+    console.error("Errore Generazione IA:", err);
     res.status(500).json({ error: "Errore durante la generazione della spiegazione." });
   }
 });
