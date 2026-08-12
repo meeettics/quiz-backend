@@ -20,9 +20,10 @@ La risposta corretta era "${rispostaCorretta}".
 Spiega in modo chiaro, empatico e in massimo 3 frasi PERCHÉ la sua risposta è sbagliata e qual è il principio neuroscientifico corretto.`;
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // Usiamo v1beta con gemini-2.5-flash
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
     
-    const geminiRes = await fetch(url, {
+    let geminiRes = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -30,7 +31,20 @@ Spiega in modo chiaro, empatico e in massimo 3 frasi PERCHÉ la sua risposta è 
       })
     });
 
-    const data = await geminiRes.json();
+    let data = await geminiRes.json();
+
+    // Fallback se il modello 2.5 non è ancora attivo sulla tua chiave
+    if (!geminiRes.ok && data.error?.code === 404) {
+      const fallbackUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      geminiRes = await fetch(fallbackUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
+      });
+      data = await geminiRes.json();
+    }
 
     if (!geminiRes.ok) {
       console.error("Errore da Google API:", data);
