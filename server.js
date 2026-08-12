@@ -17,7 +17,7 @@ app.post('/api/spiega-errore', async (req, res) => {
   const prompt = `Sei un professore universitario di Psicobiologia. 
 Uno studente ha risposto "${rispostaSbagliata}" alla domanda "${domanda}". 
 La risposta corretta era "${rispostaCorretta}". 
-Spiega in modo chiaro, empatico e in massimo 3 frasi PERCHÉ la sua risposta è sbagliata e qual è il principio neuroscientifico corretto.`;
+Spiega in modo chiaro, empatico e in massimo 3 frasi PERCHÉ la sua risposta è un errore comune e qual è il principio neuroscientifico corretto.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -25,8 +25,14 @@ Spiega in modo chiaro, empatico e in massimo 3 frasi PERCHÉ la sua risposta è 
       contents: prompt,
     });
 
-    // Estrazione corretta del testo per l'SDK @google/genai
-    const textOutput = response.text || response.candidates?.[0]?.content?.parts?.[0]?.text || "Spiegazione non disponibile al momento.";
+    let textOutput = "";
+    if (typeof response.text === 'string') {
+      textOutput = response.text;
+    } else if (response.candidates && response.candidates[0]?.content?.parts?.[0]?.text) {
+      textOutput = response.candidates[0].content.parts[0].text;
+    } else {
+      textOutput = "Spiegazione non disponibile al momento.";
+    }
 
     res.json({ spiegazione: textOutput });
   } catch (err) {
